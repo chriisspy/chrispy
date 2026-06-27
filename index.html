@@ -534,32 +534,27 @@ if (renderer) {
 
   // Cinematic studio lights: large area sources create broad, shaped reflections
   // across the glossy lettering instead of small, flat directional highlights.
-  const key = new THREE.RectAreaLight(0xfff7ee, 12, 4.5, 5.5);
-  // The corrected logo front faces +Z, so both white lights stay behind it
-  // on negative Z and illuminate only the bevelled outer rim.
-  key.position.set(4.8, 3.0, -3.8);
+  const key = new THREE.RectAreaLight(0xfff7ee, 29, 2.4, 5.5);
+  key.position.set(5.7, 10.9, 2.9);
   key.lookAt(0, 0, 0);
   scene.add(key);
 
-  const rim = new THREE.RectAreaLight(0xeaf2ff, 9, 2.2, 5.0);
-  rim.position.set(-4.8, 1.0, -4.2);
+  const rim = new THREE.RectAreaLight(0xeaf2ff, 21, 2.2, 3.6);
+  rim.position.set(6.4, 1.0, -4.2);
   rim.lookAt(0, 0, 0);
   scene.add(rim);
 
   // Orange light that follows the cursor (the pointer becomes the light source)
-  // A more distant, higher-output point light gives the cursor a much larger
-  // pool of orange with a gentler falloff across the logo.
-  // Moving the source sqrt(10) times farther away makes its illuminated area
-  // roughly 10x larger; output and travel are compensated to preserve response.
-  const cursorLight = new THREE.PointLight(0xff5a1f, 200, 200, 1.05);
-  cursorLight.position.set(0, 0, 28.5);
+  // Position, output and falloff are tuned live via the optional lighting tool.
+  const cursorLight = new THREE.PointLight(0xff5a1f, 346, 218, 1.33);
+  cursorLight.position.set(-13.7, -5.6, 10.6);
   scene.add(cursorLight);
-  const lightTarget = new THREE.Vector3(0, 0, 28.5);
+  const orangeStart = cursorLight.position.clone();
+  const orangeRest = new THREE.Vector3(11.0, -5.6, 10.6);
+  const lightTarget = orangeRest.clone();
 
-  const keyHome = key.position.clone();
-  const rimHome = rim.position.clone();
-  const orangeHome = cursorLight.position.clone();
-  const intro = { active:false, start:0, duration:3.2 };
+  const intro = { active:false, start:0, duration:2.0 };
+  const cubicBezierRamp = t => t*t*(3 - 2*t);
   const lightToolEnabled = new URLSearchParams(location.search).get('lights') === '1';
 
   const pivot = new THREE.Group();
@@ -595,6 +590,8 @@ if (renderer) {
     if (!reduce && !lightToolEnabled) {
       intro.active = true;
       intro.start = performance.now() * 0.001;
+    } else if (reduce && !lightToolEnabled) {
+      cursorLight.position.copy(orangeRest);
     }
   }, undefined, fail);
 
@@ -687,35 +684,21 @@ if (renderer) {
     if (intro.active) {
       const elapsed = performance.now() * 0.001 - intro.start;
       const progress = THREE.MathUtils.clamp(elapsed / intro.duration, 0, 1);
-      const ease = 1 - Math.pow(1 - progress, 3);
-      const approach = 1 - ease;
-      const orangeSweep = ease;
-      const orangeLift = ease;
+      const ramp = cubicBezierRamp(progress);
 
-      // Approach the earlier, wider rear-edge positions and hold there.
-      // Z remains negative throughout, keeping reflections off the front face.
-      key.position.set(keyHome.x + approach*3.2, keyHome.y - approach*2.4, keyHome.z - approach*2.2);
-      rim.position.set(rimHome.x - approach*3.2, rimHome.y + approach*2.0, rimHome.z - approach*1.8);
-      key.intensity = 20 - approach*8;
-      rim.intensity = 19 - approach*10;
-      key.lookAt(0, 0, 0);
-      rim.lookAt(0, 0, 0);
-
-      // The orange source arcs beneath the logo before becoming cursor-controlled.
-      cursorLight.position.set(orangeHome.x + orangeSweep*18.9, orangeHome.y - orangeLift*13.3, orangeHome.z - orangeLift*9.5);
-      cursorLight.intensity = 200 + orangeLift*100;
+      // Only the orange light moves: a two-second cubic Bezier ramp on X.
+      cursorLight.position.lerpVectors(orangeStart, orangeRest, ramp);
 
       if (progress >= 1) {
         intro.active = false;
-        // Never snap the orange light back to centre; keep its current position.
-        cursorLight.intensity = 200;
+        cursorLight.position.copy(orangeRest);
       }
     } else {
       pivot.rotation.y += (pointer.x*TILT - pivot.rotation.y)*0.06;
       pivot.rotation.x += (pointer.y*TILT - pivot.rotation.x)*0.06;
       // Orange light tracks the cursor across the surface (smoothed)
       if (!lightToolEnabled && pointer.active) {
-        lightTarget.set(pointer.x*13.3, -pointer.y*7.6, 28.5);
+        lightTarget.set(orangeRest.x + pointer.x*13.3, orangeRest.y - pointer.y*7.6, orangeRest.z);
         cursorLight.position.lerp(lightTarget, 0.09);
       }
     }
