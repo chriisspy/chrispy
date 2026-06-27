@@ -552,10 +552,6 @@ if (renderer) {
   const orangeStart = cursorLight.position.clone();
   const orangeRest = new THREE.Vector3(30.7, -8.0, 21.6);
   const lightTarget = orangeRest.clone();
-  const cursorRay = new THREE.Raycaster();
-  const cursorNdc = new THREE.Vector2();
-  const logoPlane = new THREE.Plane(new THREE.Vector3(0,0,1), 0);
-  const cursorPoint = new THREE.Vector3();
 
   const intro = { active:false, start:0, duration:2.0 };
   const cubicBezierRamp = t => t*t*(3 - 2*t);
@@ -701,14 +697,16 @@ if (renderer) {
     } else {
       pivot.rotation.y += (pointer.x*TILT - pivot.rotation.y)*0.06;
       pivot.rotation.x += (pointer.y*TILT - pivot.rotation.x)*0.06;
-      // Orange light tracks the cursor across the surface (smoothed)
+      // Orange light tracks the cursor directly in the calibrated light space.
       if (!lightToolEnabled && pointer.active) {
-        cursorNdc.set(pointer.x, -pointer.y);
-        cursorRay.setFromCamera(cursorNdc, camera);
-        if (cursorRay.ray.intersectPlane(logoPlane, cursorPoint)) {
-          lightTarget.set(cursorPoint.x, cursorPoint.y, orangeRest.z);
-          cursorLight.position.lerp(lightTarget, 0.09);
-        }
+        const cursorX = THREE.MathUtils.clamp((pointer.x + 1) * 0.5, 0, 1);
+        const cursorY = THREE.MathUtils.clamp(pointer.y, -1, 1);
+        lightTarget.set(
+          THREE.MathUtils.lerp(orangeStart.x, orangeRest.x, cursorX),
+          -cursorY * 16.0,
+          orangeRest.z
+        );
+        cursorLight.position.copy(lightTarget);
       }
     }
     renderer.render(scene, camera);
