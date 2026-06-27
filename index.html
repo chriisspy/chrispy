@@ -571,9 +571,6 @@ if (renderer) {
     frame(model);
     pivot.add(model);
     if (!reduce) {
-      pivot.scale.setScalar(0.72);
-      pivot.rotation.set(0.08, 0.18, -0.035);
-      pivot.position.z = -0.18;
       intro.active = true;
       intro.start = performance.now() * 0.001;
     }
@@ -605,11 +602,6 @@ if (renderer) {
       const edgeSweep = Math.sin(ease * Math.PI * 2);
       const lift = Math.sin(ease * Math.PI);
 
-      // Logo settles forward into its final, static pose.
-      pivot.scale.setScalar(0.72 + 0.28 * ease);
-      pivot.rotation.set(0.08 * (1-ease), 0.18 * (1-ease), -0.035 * (1-ease));
-      pivot.position.z = -0.18 * (1-ease);
-
       // White studio lights cross opposite edges, then return home.
       key.position.set(keyHome.x - edgeSweep*5.5, keyHome.y + lift*2.0, keyHome.z - lift*2.5);
       rim.position.set(rimHome.x + edgeSweep*5.5, rimHome.y - lift*1.5, rimHome.z + lift*2.0);
@@ -624,9 +616,6 @@ if (renderer) {
 
       if (progress >= 1) {
         intro.active = false;
-        pivot.scale.setScalar(1);
-        pivot.rotation.set(0, 0, 0);
-        pivot.position.z = 0;
         key.position.copy(keyHome); key.intensity = 12; key.lookAt(0, 0, 0);
         rim.position.copy(rimHome); rim.intensity = 9; rim.lookAt(0, 0, 0);
         cursorLight.position.copy(orangeHome); cursorLight.intensity = 60;
