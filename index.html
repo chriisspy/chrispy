@@ -530,10 +530,10 @@ if (renderer) {
   // Orange light that follows the cursor (the pointer becomes the light source)
   // A more distant, higher-output point light gives the cursor a much larger
   // pool of orange with a gentler falloff across the logo.
-  const cursorLight = new THREE.PointLight(0xff5a1f, 41, 12, 1.15);
-  cursorLight.position.set(0, 0, 5.46);
+  const cursorLight = new THREE.PointLight(0xff5a1f, 60, 20, 1.05);
+  cursorLight.position.set(0, 0, 9.0);
   scene.add(cursorLight);
-  const lightTarget = new THREE.Vector3(0, 0, 5.46);
+  const lightTarget = new THREE.Vector3(0, 0, 9.0);
 
   const pivot = new THREE.Group();
   scene.add(pivot);
@@ -567,12 +567,11 @@ if (renderer) {
   const pointer = { x:0, y:0 };
   const TILT = 0;
   if (!reduce) {
-    container.addEventListener('pointermove', (e) => {
+    window.addEventListener('pointermove', (e) => {
       const r = container.getBoundingClientRect();
-      pointer.x = ((e.clientX - r.left)/r.width)*2 - 1;
-      pointer.y = ((e.clientY - r.top)/r.height)*2 - 1;
-    });
-    container.addEventListener('pointerleave', () => { pointer.x = 0; pointer.y = 0; });
+      pointer.x = THREE.MathUtils.clamp(((e.clientX - r.left)/r.width)*2 - 1, -1.4, 1.4);
+      pointer.y = THREE.MathUtils.clamp(((e.clientY - r.top)/r.height)*2 - 1, -1.2, 1.2);
+    }, { passive:true });
   }
 
   // Render only while the hero is on screen
@@ -585,7 +584,7 @@ if (renderer) {
     pivot.rotation.y += (pointer.x*TILT - pivot.rotation.y)*0.06;
     pivot.rotation.x += (pointer.y*TILT - pivot.rotation.x)*0.06;
     // Orange light tracks the cursor across the surface (smoothed)
-    lightTarget.set(pointer.x*3.0, -pointer.y*1.8, 5.46);
+    lightTarget.set(pointer.x*4.2, -pointer.y*2.4, 9.0);
     cursorLight.position.lerp(lightTarget, 0.09);
     renderer.render(scene, camera);
   }
