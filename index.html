@@ -486,7 +486,8 @@ import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
 import { RectAreaLightUniformsLib } from 'three/addons/lights/RectAreaLightUniformsLib.js';
 
-const MODEL_URL = 'chrispy.glb'; // <-- REPLACE_WITH path/URL to your exported .glb
+// Versioned filename deliberately bypasses browser and CDN caches after model updates.
+const MODEL_URL = 'chrispy-v2-20260627.glb?v=2';
 
 const container = document.getElementById('chrispy3d');
 const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
