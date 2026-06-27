@@ -81,7 +81,7 @@
   /* 3D hero logo (replaces the wordmark) */
   .sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;
     clip:rect(0,0,0,0);white-space:nowrap;border:0}
-  .hero-logo{position:relative;width:min(92vw,940px);height:clamp(150px,30vw,360px);
+  .hero-logo{position:relative;width:min(100vw,1600px);height:clamp(180px,34vw,500px);
     opacity:0;animation:fu .9s .12s forwards}
   .hero-logo canvas{display:block;width:100%!important;height:100%!important;touch-action:pan-y}
   /* shown only if WebGL/model fails */
@@ -548,7 +548,7 @@ if (renderer) {
     const vFov = camera.fov * Math.PI/180;
     const fitH = (size.y/2) / Math.tan(vFov/2);
     const fitW = (size.x/2) / Math.tan(vFov/2) / aspect;
-    const MODEL_ZOOM = 1.8; // render the logo 80% larger than its fitted size
+    const MODEL_ZOOM = 1.05; // slight zoom while preserving the full left and right edges
     camera.position.set(0, 0, Math.max(fitH, fitW) * 1.18 / MODEL_ZOOM);
     camera.updateProjectionMatrix();
   }
