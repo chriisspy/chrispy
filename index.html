@@ -484,6 +484,7 @@
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
+import { RectAreaLightUniformsLib } from 'three/addons/lights/RectAreaLightUniformsLib.js';
 
 const MODEL_URL = 'chrispy.glb'; // <-- REPLACE_WITH path/URL to your exported .glb
 
@@ -505,6 +506,7 @@ if (renderer) {
   container.appendChild(renderer.domElement);
 
   const scene = new THREE.Scene();
+  RectAreaLightUniformsLib.init();
 
   // Studio reflections so the black glass actually reflects (no external HDR needed)
   const pmrem = new THREE.PMREMGenerator(renderer);
@@ -512,15 +514,25 @@ if (renderer) {
 
   const camera = new THREE.PerspectiveCamera(35, container.clientWidth/container.clientHeight, 0.1, 100);
 
-  // Lights — neutral white key + rim for clean glass reflections
-  const key = new THREE.DirectionalLight(0xffffff, 1.5); key.position.set(3,4,5); scene.add(key);
-  const rim = new THREE.DirectionalLight(0xffffff, 0.7); rim.position.set(-4,1,-3); scene.add(rim);
+  // Cinematic studio lights: large area sources create broad, shaped reflections
+  // across the glossy lettering instead of small, flat directional highlights.
+  const key = new THREE.RectAreaLight(0xfff7ee, 12, 4.5, 5.5);
+  key.position.set(4.5, 3.5, 5.5);
+  key.lookAt(0, 0, 0);
+  scene.add(key);
+
+  const rim = new THREE.RectAreaLight(0xeaf2ff, 9, 2.2, 5.0);
+  rim.position.set(-4.5, 1.5, 3.0);
+  rim.lookAt(0, 0, 0);
+  scene.add(rim);
 
   // Orange light that follows the cursor (the pointer becomes the light source)
-  const cursorLight = new THREE.PointLight(0xff5a1f, 18, 0, 2);
-  cursorLight.position.set(0, 0, 2.2);
+  // A more distant, higher-output point light gives the cursor a much larger
+  // pool of orange with a gentler falloff across the logo.
+  const cursorLight = new THREE.PointLight(0xff5a1f, 34, 10, 1.15);
+  cursorLight.position.set(0, 0, 4.2);
   scene.add(cursorLight);
-  const lightTarget = new THREE.Vector3(0, 0, 2.2);
+  const lightTarget = new THREE.Vector3(0, 0, 4.2);
 
   const pivot = new THREE.Group();
   scene.add(pivot);
@@ -566,17 +578,14 @@ if (renderer) {
   let visible = true;
   new IntersectionObserver(([e]) => { visible = e.isIntersecting; }).observe(container);
 
-  const clock = new THREE.Clock();
   function animate(){
     requestAnimationFrame(animate);
     if (!visible) return;
-    const t = clock.getElapsedTime();
     pivot.rotation.y += (pointer.x*TILT - pivot.rotation.y)*0.06;
     pivot.rotation.x += (pointer.y*TILT - pivot.rotation.x)*0.06;
     // Orange light tracks the cursor across the surface (smoothed)
-    lightTarget.set(pointer.x*2.4, -pointer.y*1.4, 2.2);
-    cursorLight.position.lerp(lightTarget, 0.12);
-    if (!reduce) pivot.position.y = Math.sin(t*0.8)*0.03; // gentle idle drift
+    lightTarget.set(pointer.x*3.0, -pointer.y*1.8, 4.2);
+    cursorLight.position.lerp(lightTarget, 0.09);
     renderer.render(scene, camera);
   }
   animate();
