@@ -1,2 +1,0 @@
-# chrispy
-Chrispy Graphics
