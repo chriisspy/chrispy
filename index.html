@@ -548,7 +548,8 @@ if (renderer) {
     const vFov = camera.fov * Math.PI/180;
     const fitH = (size.y/2) / Math.tan(vFov/2);
     const fitW = (size.x/2) / Math.tan(vFov/2) / aspect;
-    camera.position.set(0, 0, Math.max(fitH, fitW) * 1.18);
+    const MODEL_ZOOM = 1.8; // render the logo 80% larger than its fitted size
+    camera.position.set(0, 0, Math.max(fitH, fitW) * 1.18 / MODEL_ZOOM);
     camera.updateProjectionMatrix();
   }
 
