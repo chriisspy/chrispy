@@ -90,6 +90,23 @@
   .hero-logo .fallback .o{color:var(--orange)}
   .hero-logo.failed .fallback{display:flex}
 
+  /* Optional live lighting tuner — enabled only with ?lights=1 */
+  .light-tool{position:fixed;right:14px;bottom:14px;z-index:120;width:min(390px,calc(100vw - 28px));
+    max-height:calc(100vh - 28px);overflow:auto;padding:18px;border:1px solid rgba(255,255,255,.18);
+    border-radius:14px;background:rgba(10,10,11,.94);backdrop-filter:blur(18px);box-shadow:0 18px 60px rgba(0,0,0,.55);
+    text-align:left;color:var(--ink);font:12px/1.35 "Hanken Grotesk",sans-serif}
+  .light-tool h3{font-size:16px;margin-bottom:4px}.light-tool .hint{color:var(--mute);margin-bottom:14px}
+  .light-tool fieldset{border:1px solid var(--line);border-radius:10px;padding:10px;margin:0 0 10px}
+  .light-tool legend{padding:0 6px;color:var(--orange-soft);font-weight:700;letter-spacing:.04em}
+  .light-tool label{display:grid;grid-template-columns:62px 1fr 48px;gap:8px;align-items:center;margin:7px 0;color:var(--mute)}
+  .light-tool input[type="range"]{width:100%;accent-color:var(--orange)}
+  .light-tool output{text-align:right;color:var(--ink);font-variant-numeric:tabular-nums}
+  .light-tool textarea{width:100%;height:116px;resize:vertical;margin-top:4px;padding:9px;border:1px solid var(--line);
+    border-radius:8px;background:#050505;color:#cfcfd4;font:10.5px/1.4 ui-monospace,SFMono-Regular,Consolas,monospace}
+  .light-tool .tool-actions{display:flex;align-items:center;gap:9px;margin-top:9px}
+  .light-tool button{border:0;border-radius:999px;padding:9px 14px;background:var(--orange);color:#140700;font-weight:800;cursor:pointer}
+  .light-tool .status{color:var(--mute)}
+
   .chip{display:inline-flex;align-items:center;gap:14px;margin-top:36px;padding:8px 8px 8px 14px;
     border:1px solid var(--line);border-radius:100px;background:var(--card);opacity:0;animation:fu .8s .22s forwards}
   .chip .avs{display:flex}
@@ -543,6 +560,7 @@ if (renderer) {
   const rimHome = rim.position.clone();
   const orangeHome = cursorLight.position.clone();
   const intro = { active:false, start:0, duration:3.2 };
+  const lightToolEnabled = new URLSearchParams(location.search).get('lights') === '1';
 
   const pivot = new THREE.Group();
   scene.add(pivot);
@@ -574,7 +592,7 @@ if (renderer) {
     });});
     frame(model);
     pivot.add(model);
-    if (!reduce) {
+    if (!reduce && !lightToolEnabled) {
       intro.active = true;
       intro.start = performance.now() * 0.001;
     }
@@ -591,6 +609,72 @@ if (renderer) {
       pointer.active = true;
     }, { passive:true });
   }
+
+  function createLightingTool(){
+    const panel = document.createElement('aside');
+    panel.className = 'light-tool';
+    panel.setAttribute('aria-label', 'Live 3D lighting tuner');
+    panel.innerHTML = '<h3>Live lighting tuner</h3><p class="hint">Adjust the lights live, then copy the settings and paste them into the Codex chat.</p><div class="tool-fields"></div><textarea readonly aria-label="Lighting settings JSON"></textarea><div class="tool-actions"><button type="button">Copy settings</button><span class="status" aria-live="polite"></span></div>';
+    document.body.appendChild(panel);
+
+    const specs = [
+      { id:'key', title:'White key', light:key, props:[
+        ['x',-12,12,.1],['y',-12,12,.1],['z',-12,12,.1],['intensity',0,40,.5],['width',.2,12,.1],['height',.2,12,.1]
+      ]},
+      { id:'rim', title:'White rim', light:rim, props:[
+        ['x',-12,12,.1],['y',-12,12,.1],['z',-12,12,.1],['intensity',0,40,.5],['width',.2,12,.1],['height',.2,12,.1]
+      ]},
+      { id:'orange', title:'Orange cursor light', light:cursorLight, props:[
+        ['x',-40,40,.1],['y',-40,40,.1],['z',-10,60,.1],['intensity',0,500,1],['distance',0,300,1],['decay',0,2,.01]
+      ]}
+    ];
+
+    const fields = panel.querySelector('.tool-fields');
+    const output = panel.querySelector('textarea');
+    const status = panel.querySelector('.status');
+    const positionProps = new Set(['x','y','z']);
+    const readValue = (spec, prop) => positionProps.has(prop) ? spec.light.position[prop] : spec.light[prop];
+    const writeValue = (spec, prop, value) => {
+      if (positionProps.has(prop)) spec.light.position[prop] = value;
+      else spec.light[prop] = value;
+      if (spec.id !== 'orange') spec.light.lookAt(0,0,0);
+    };
+    const rounded = n => Number(n.toFixed(3));
+    const updateOutput = () => {
+      output.value = JSON.stringify({
+        key:{position:key.position.toArray().map(rounded),intensity:rounded(key.intensity),width:rounded(key.width),height:rounded(key.height)},
+        rim:{position:rim.position.toArray().map(rounded),intensity:rounded(rim.intensity),width:rounded(rim.width),height:rounded(rim.height)},
+        orange:{position:cursorLight.position.toArray().map(rounded),intensity:rounded(cursorLight.intensity),distance:rounded(cursorLight.distance),decay:rounded(cursorLight.decay)}
+      }, null, 2);
+    };
+
+    specs.forEach(spec => {
+      const group = document.createElement('fieldset');
+      group.innerHTML = `<legend>${spec.title}</legend>`;
+      spec.props.forEach(([prop,min,max,step]) => {
+        const label = document.createElement('label');
+        const input = document.createElement('input');
+        const value = document.createElement('output');
+        input.type='range'; input.min=min; input.max=max; input.step=step; input.value=readValue(spec,prop);
+        value.value=Number(input.value).toFixed(step < .1 ? 2 : 1);
+        label.append(prop,input,value); group.appendChild(label);
+        input.addEventListener('input', () => {
+          writeValue(spec,prop,Number(input.value));
+          value.value=Number(input.value).toFixed(step < .1 ? 2 : 1);
+          status.textContent=''; updateOutput();
+        });
+      });
+      fields.appendChild(group);
+    });
+
+    panel.querySelector('button').addEventListener('click', async () => {
+      try { await navigator.clipboard.writeText(output.value); status.textContent='Copied'; }
+      catch(e) { output.focus(); output.select(); document.execCommand('copy'); status.textContent='Copied'; }
+    });
+    updateOutput();
+  }
+
+  if (lightToolEnabled) createLightingTool();
 
   // Render only while the hero is on screen
   let visible = true;
@@ -630,7 +714,7 @@ if (renderer) {
       pivot.rotation.y += (pointer.x*TILT - pivot.rotation.y)*0.06;
       pivot.rotation.x += (pointer.y*TILT - pivot.rotation.x)*0.06;
       // Orange light tracks the cursor across the surface (smoothed)
-      if (pointer.active) {
+      if (!lightToolEnabled && pointer.active) {
         lightTarget.set(pointer.x*13.3, -pointer.y*7.6, 28.5);
         cursorLight.position.lerp(lightTarget, 0.09);
       }
