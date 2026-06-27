@@ -512,9 +512,15 @@ if (renderer) {
 
   const camera = new THREE.PerspectiveCamera(35, container.clientWidth/container.clientHeight, 0.1, 100);
 
-  // Lights — neutral key + a soft brand-orange rim to catch the bevels
+  // Lights — neutral white key + rim for clean glass reflections
   const key = new THREE.DirectionalLight(0xffffff, 1.5); key.position.set(3,4,5); scene.add(key);
-  const rim = new THREE.DirectionalLight(0xff5a1f, 0.7); rim.position.set(-4,1,-3); scene.add(rim);
+  const rim = new THREE.DirectionalLight(0xffffff, 0.7); rim.position.set(-4,1,-3); scene.add(rim);
+
+  // Orange light that follows the cursor (the pointer becomes the light source)
+  const cursorLight = new THREE.PointLight(0xff5a1f, 18, 0, 2);
+  cursorLight.position.set(0, 0, 2.2);
+  scene.add(cursorLight);
+  const lightTarget = new THREE.Vector3(0, 0, 2.2);
 
   const pivot = new THREE.Group();
   scene.add(pivot);
@@ -537,7 +543,7 @@ if (renderer) {
     const model = gltf.scene;
     // Force the liquid black-glass look instead of the baked texture
     model.traverse(o => { if (o.isMesh) o.material = new THREE.MeshPhysicalMaterial({
-      color:0x05050a, metalness:0.0, roughness:0.05,
+      color:0x09090a, metalness:0.0, roughness:0.05,
       clearcoat:1.0, clearcoatRoughness:0.03, reflectivity:1.0, envMapIntensity:1.5
     });});
     frame(model);
@@ -546,7 +552,7 @@ if (renderer) {
 
   // Cursor tilt — relative to the hero box, smoothed
   const pointer = { x:0, y:0 };
-  const TILT = reduce ? 0 : 0.20;
+  const TILT = 0;
   if (!reduce) {
     container.addEventListener('pointermove', (e) => {
       const r = container.getBoundingClientRect();
@@ -567,6 +573,9 @@ if (renderer) {
     const t = clock.getElapsedTime();
     pivot.rotation.y += (pointer.x*TILT - pivot.rotation.y)*0.06;
     pivot.rotation.x += (pointer.y*TILT - pivot.rotation.x)*0.06;
+    // Orange light tracks the cursor across the surface (smoothed)
+    lightTarget.set(pointer.x*2.4, -pointer.y*1.4, 2.2);
+    cursorLight.position.lerp(lightTarget, 0.12);
     if (!reduce) pivot.position.y = Math.sin(t*0.8)*0.03; // gentle idle drift
     renderer.render(scene, camera);
   }
