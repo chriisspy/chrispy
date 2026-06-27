@@ -554,13 +554,26 @@ if (renderer) {
   bloomComposer.addPass(new RenderPass(scene, camera));
   bloomComposer.addPass(bloom);
 
+  const orangeBloom = new UnrealBloomPass(
+    new THREE.Vector2(container.clientWidth, container.clientHeight),
+    0.015, // strength — intentionally extremely subtle
+    0.18,  // radius
+    0.98   // luminance threshold
+  );
+  const orangeBloomComposer = new EffectComposer(renderer);
+  orangeBloomComposer.setPixelRatio(Math.min(devicePixelRatio, 2));
+  orangeBloomComposer.renderToScreen = false;
+  orangeBloomComposer.addPass(new RenderPass(scene, camera));
+  orangeBloomComposer.addPass(orangeBloom);
+
   const bloomMix = new ShaderPass(new THREE.ShaderMaterial({
     uniforms:{
       baseTexture:{value:null},
-      bloomTexture:{value:bloomComposer.renderTarget2.texture}
+      bloomTexture:{value:bloomComposer.renderTarget2.texture},
+      orangeBloomTexture:{value:orangeBloomComposer.renderTarget2.texture}
     },
     vertexShader:'varying vec2 vUv; void main(){vUv=uv;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0);}',
-    fragmentShader:'uniform sampler2D baseTexture; uniform sampler2D bloomTexture; varying vec2 vUv; void main(){vec4 base=texture2D(baseTexture,vUv);vec3 glow=texture2D(bloomTexture,vUv).rgb;gl_FragColor=vec4(base.rgb+glow,base.a);}'
+    fragmentShader:'uniform sampler2D baseTexture; uniform sampler2D bloomTexture; uniform sampler2D orangeBloomTexture; varying vec2 vUv; void main(){vec4 base=texture2D(baseTexture,vUv);vec3 whiteGlow=texture2D(bloomTexture,vUv).rgb;vec3 orangeGlow=texture2D(orangeBloomTexture,vUv).rgb;gl_FragColor=vec4(base.rgb+whiteGlow+orangeGlow,base.a);}'
   }), 'baseTexture');
 
   const composer = new EffectComposer(renderer);
@@ -576,19 +589,21 @@ if (renderer) {
   key.lookAt(0, 0, 0);
   scene.add(key);
 
-  const rim = new THREE.RectAreaLight(0xeaf2ff, 40, 1.4, 12.0);
-  rim.position.set(-7.9, 1.0, -4.2);
+  const rim = new THREE.RectAreaLight(0xeaf2ff, 40, 3.4, 12.0);
+  rim.position.set(-11.3, 2.7, 2.6);
   rim.lookAt(0, 0, 0);
   scene.add(rim);
 
   // Orange light that follows the cursor (the pointer becomes the light source)
   // Position, output and falloff are tuned live via the optional lighting tool.
   const cursorLight = new THREE.PointLight(0xff5a1f, 459, 241, 1.25);
-  cursorLight.position.set(-32.0, -8.0, 21.6);
+  cursorLight.position.set(-32.0, -26.3, 30.2);
   scene.add(cursorLight);
   const orangeStart = cursorLight.position.clone();
-  const orangeRest = new THREE.Vector3(30.7, -8.0, 21.6);
+  const orangeRest = new THREE.Vector3(-1.2, -26.3, 30.2);
   const lightTarget = orangeRest.clone();
+  const cursorXMin = -32.0;
+  const cursorXMax = 30.7;
 
   const intro = { active:false, start:0, duration:2.0 };
   const cubicBezierRamp = t => t*t*(3 - 2*t);
@@ -664,6 +679,9 @@ if (renderer) {
       ]},
       { id:'bloom', title:'Bloom / rim glow', light:bloom, props:[
         ['strength',0,.4,.01],['radius',0,1,.01],['threshold',.7,1,.01]
+      ]},
+      { id:'orangeBloom', title:'Orange bloom', light:orangeBloom, props:[
+        ['strength',0,.15,.005],['radius',0,1,.01],['threshold',.7,1,.01]
       ]}
     ];
 
@@ -683,7 +701,8 @@ if (renderer) {
         key:{position:key.position.toArray().map(rounded),intensity:rounded(key.intensity),width:rounded(key.width),height:rounded(key.height)},
         rim:{position:rim.position.toArray().map(rounded),intensity:rounded(rim.intensity),width:rounded(rim.width),height:rounded(rim.height)},
         orange:{position:cursorLight.position.toArray().map(rounded),intensity:rounded(cursorLight.intensity),distance:rounded(cursorLight.distance),decay:rounded(cursorLight.decay)},
-        bloom:{strength:rounded(bloom.strength),radius:rounded(bloom.radius),threshold:rounded(bloom.threshold)}
+        bloom:{strength:rounded(bloom.strength),radius:rounded(bloom.radius),threshold:rounded(bloom.threshold)},
+        orangeBloom:{strength:rounded(orangeBloom.strength),radius:rounded(orangeBloom.radius),threshold:rounded(orangeBloom.threshold)}
       }, null, 2);
     };
 
@@ -694,12 +713,13 @@ if (renderer) {
         const label = document.createElement('label');
         const input = document.createElement('input');
         const value = document.createElement('output');
+        const digits = step < .01 ? 3 : step < .1 ? 2 : 1;
         input.type='range'; input.min=min; input.max=max; input.step=step; input.value=readValue(spec,prop);
-        value.value=Number(input.value).toFixed(step < .1 ? 2 : 1);
+        value.value=Number(input.value).toFixed(digits);
         label.append(prop,input,value); group.appendChild(label);
         input.addEventListener('input', () => {
           writeValue(spec,prop,Number(input.value));
-          value.value=Number(input.value).toFixed(step < .1 ? 2 : 1);
+          value.value=Number(input.value).toFixed(digits);
           status.textContent=''; updateOutput();
         });
       });
@@ -743,7 +763,7 @@ if (renderer) {
         const cursorX = THREE.MathUtils.clamp((pointer.x + 1) * 0.5, 0, 1);
         const cursorY = THREE.MathUtils.clamp(pointer.y, -1, 1);
         lightTarget.set(
-          THREE.MathUtils.lerp(orangeStart.x, orangeRest.x, cursorX),
+          THREE.MathUtils.lerp(cursorXMin, cursorXMax, cursorX),
           -cursorY * 16.0,
           orangeRest.z
         );
@@ -753,6 +773,16 @@ if (renderer) {
     cursorLight.visible = false;
     bloomComposer.render();
     cursorLight.visible = true;
+
+    const environment = scene.environment;
+    key.visible = false;
+    rim.visible = false;
+    scene.environment = null;
+    orangeBloomComposer.render();
+    scene.environment = environment;
+    key.visible = true;
+    rim.visible = true;
+
     composer.render();
   }
   animate();
@@ -763,6 +793,7 @@ if (renderer) {
     if (!w || !h) return;
     renderer.setSize(w, h, false);
     bloomComposer.setSize(w, h);
+    orangeBloomComposer.setSize(w, h);
     composer.setSize(w, h);
     camera.aspect = w/h; camera.updateProjectionMatrix();
   });
