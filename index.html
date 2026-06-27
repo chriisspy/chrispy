@@ -1,3 +1,453 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Chrispy — Poster Swap</title>
+<meta name="description" content="Chrispy reimagines movie posters into something new. 15.9M views a month. Let's work." />
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;500;600;700;800&family=Fraunces:ital,opsz,wght@1,9..144,400;1,9..144,500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#09090A;
+    --panel:#0E0E0F;
+    --card:#121214;
+    --card-2:#16161A;
+    --ink:#F3F2EF;
+    --mute:#8C8C92;
+    --faint:#5A5A60;
+    --line:rgba(255,255,255,.085);
+    --line-2:rgba(255,255,255,.05);
+    --orange:#FF5A1F;
+    --orange-soft:#FF7A3C;
+    --r:18px;
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{background:var(--bg);color:var(--ink);font-family:"Hanken Grotesk",sans-serif;
+    font-weight:400;-webkit-font-smoothing:antialiased;overflow-x:hidden;line-height:1.55;letter-spacing:-.005em}
+  ::selection{background:var(--orange);color:#120802}
+  a{color:inherit;text-decoration:none}
+  .wrap{max-width:1240px;margin:0 auto;padding:0 32px}
+  img{max-width:100%;display:block}
+
+  /* star motif */
+  .star{display:inline-block;width:1em;height:1em;vertical-align:-.1em}
+  .star svg{width:100%;height:100%;display:block}
+
+  /* labels */
+  .label{display:inline-flex;align-items:center;gap:9px;font-size:11.5px;letter-spacing:.16em;
+    text-transform:uppercase;color:var(--mute);font-weight:600}
+  .label .star{color:var(--orange);width:11px;height:11px}
+
+  h1,h2,h3,h4{font-weight:500;letter-spacing:-.025em;line-height:1.04}
+  .serif{font-family:"Fraunces",serif;font-style:italic;font-weight:400;font-size:1.08em;color:var(--ink)}
+  .serif.o{color:var(--orange-soft)}
+
+  /* ---------- BUTTONS (Norvin slide-label) ---------- */
+  .btn{display:inline-flex;align-items:center;gap:9px;font-size:13.5px;font-weight:600;
+    padding:13px 24px;border-radius:100px;border:1px solid var(--line);color:var(--ink);
+    background:transparent;transition:background .3s,border-color .3s,color .3s}
+  .btn .slide{position:relative;display:inline-block;overflow:hidden;height:1.35em;line-height:1.35em}
+  .btn .slide span{display:block;transition:transform .4s cubic-bezier(.6,0,.15,1)}
+  .btn:hover .slide span{transform:translateY(-1.35em)}
+  .btn .star{width:11px;height:11px;color:var(--orange)}
+  .btn:hover{border-color:rgba(255,255,255,.28)}
+  .btn-primary{background:var(--ink);color:#0A0A0A;border-color:var(--ink)}
+  .btn-primary .star{color:var(--orange)}
+  .btn-primary:hover{background:#fff;border-color:#fff}
+
+  /* ---------- NAV ---------- */
+  nav{position:fixed;top:0;left:0;right:0;z-index:60;display:flex;align-items:center;justify-content:space-between;
+    padding:16px 32px;transition:background .3s,border-color .3s;border-bottom:1px solid transparent}
+  nav.stuck{background:rgba(9,9,10,.78);backdrop-filter:blur(16px);border-bottom:1px solid var(--line-2)}
+  nav .nleft,nav .nright{display:flex;align-items:center;gap:18px}
+  nav .logo{display:inline-flex;align-items:center;gap:8px;font-weight:700;font-size:17px;letter-spacing:-.02em}
+  nav .logo .star{color:var(--orange);width:14px;height:14px}
+  nav .meta{font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--mute);font-weight:600}
+  nav .meta b{color:var(--ink);font-weight:600}
+  @media(max-width:720px){nav .meta{display:none}}
+
+  /* ---------- HERO ---------- */
+  .hero{min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;
+    text-align:center;padding:150px 0 90px;position:relative}
+  .hero .eyebrow{margin-bottom:28px;opacity:0;animation:fu .7s .05s forwards}
+  @keyframes fu{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+  .hero h1{font-size:clamp(76px,15vw,200px);font-weight:500;letter-spacing:-.045em;line-height:.9;
+    opacity:0;animation:fu .8s .12s forwards}
+  .hero h1 .o{color:var(--orange)}
+
+  /* 3D hero logo (replaces the wordmark) */
+  .sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;
+    clip:rect(0,0,0,0);white-space:nowrap;border:0}
+  .hero-logo{position:relative;width:min(92vw,940px);height:clamp(150px,30vw,360px);
+    opacity:0;animation:fu .9s .12s forwards}
+  .hero-logo canvas{display:block;width:100%!important;height:100%!important;touch-action:pan-y}
+  /* shown only if WebGL/model fails */
+  .hero-logo .fallback{position:absolute;inset:0;display:none;align-items:center;justify-content:center;
+    font-size:clamp(76px,15vw,200px);font-weight:500;letter-spacing:-.045em;line-height:.9}
+  .hero-logo .fallback .o{color:var(--orange)}
+  .hero-logo.failed .fallback{display:flex}
+
+  .chip{display:inline-flex;align-items:center;gap:14px;margin-top:36px;padding:8px 8px 8px 14px;
+    border:1px solid var(--line);border-radius:100px;background:var(--card);opacity:0;animation:fu .8s .22s forwards}
+  .chip .avs{display:flex}
+  .chip .avs i{width:30px;height:30px;border-radius:50%;border:2px solid var(--card);margin-left:-10px;
+    background:#26262b center/cover no-repeat;display:block}
+  .chip .avs i:first-child{margin-left:0}
+  .chip .txt{font-size:12.5px;color:var(--mute);font-weight:500;padding-right:6px}
+  .chip .txt b{color:var(--ink);font-weight:700}
+
+  .hero .sub{margin-top:30px;max-width:480px;font-size:16.5px;line-height:1.6;color:var(--mute);
+    opacity:0;animation:fu .8s .3s forwards}
+  .hero .actions{margin-top:34px;display:flex;gap:12px;flex-wrap:wrap;justify-content:center;
+    opacity:0;animation:fu .8s .38s forwards}
+
+  .scrollcue{position:absolute;bottom:28px;left:50%;transform:translateX(-50%);font-size:10px;
+    letter-spacing:.2em;text-transform:uppercase;color:var(--faint);font-weight:600;display:flex;flex-direction:column;align-items:center;gap:9px}
+  .scrollcue .ln{width:1px;height:32px;background:linear-gradient(var(--faint),transparent);position:relative;overflow:hidden}
+  .scrollcue .ln::after{content:"";position:absolute;inset:0;background:var(--orange);transform:translateY(-100%);animation:dp 2.2s infinite}
+  @keyframes dp{40%{transform:translateY(0)}100%{transform:translateY(100%)}}
+
+  /* ---------- MARQUEE ---------- */
+  .marquee{border-top:1px solid var(--line-2);border-bottom:1px solid var(--line-2);
+    padding:20px 0;overflow:hidden;white-space:nowrap}
+  .mtrack{display:inline-flex;align-items:center;animation:scr 30s linear infinite;will-change:transform}
+  .mtrack .it{display:inline-flex;align-items:center;gap:18px;padding:0 26px;font-size:14px;
+    letter-spacing:.06em;text-transform:uppercase;color:var(--mute);font-weight:600}
+  .mtrack .it .star{width:11px;height:11px;color:var(--orange)}
+  @keyframes scr{to{transform:translateX(-50%)}}
+
+  /* ---------- SECTION ---------- */
+  section.block{padding:clamp(100px,12vw,165px) 0}
+  .sechead{margin-bottom:56px}
+  .sechead .label{margin-bottom:22px}
+  .sechead h2{font-size:clamp(34px,5.2vw,58px);font-weight:500;letter-spacing:-.03em;max-width:20ch}
+  .sechead p{margin-top:20px;max-width:440px;font-size:16px;color:var(--mute);line-height:1.6}
+  .sechead.center{text-align:center}
+  .sechead.center h2,.sechead.center p{margin-left:auto;margin-right:auto}
+
+  /* stat row */
+  .statrow{display:grid;grid-template-columns:repeat(3,1fr);gap:24px;border-top:1px solid var(--line);padding-top:48px}
+  @media(max-width:720px){.statrow{grid-template-columns:1fr;gap:36px}}
+  .statrow .s .n{font-size:clamp(54px,8vw,86px);font-weight:500;letter-spacing:-.04em;line-height:.92}
+  .statrow .s .n .u{color:var(--orange-soft);font-size:.5em;font-weight:600;vertical-align:super;margin-left:2px}
+  .statrow .s .k{margin-top:12px;font-size:14px;color:var(--mute);max-width:240px}
+
+  /* card base */
+  .card{background:var(--card);border:1px solid var(--line);border-radius:var(--r);transition:border-color .3s,transform .3s}
+  .card:hover{border-color:rgba(255,255,255,.2)}
+
+  /* process */
+  .proc{display:grid;grid-template-columns:repeat(3,1fr);gap:20px}
+  @media(max-width:840px){.proc{grid-template-columns:1fr}}
+  .proc .card{padding:30px 28px 26px}
+  .proc .step{display:flex;align-items:center;justify-content:space-between;margin-bottom:64px}
+  .proc .step .ix{font-size:13px;color:var(--faint);font-weight:600}
+  .proc .step .tag{font-size:10.5px;letter-spacing:.16em;text-transform:uppercase;color:var(--mute);
+    border:1px solid var(--line);border-radius:100px;padding:5px 11px;font-weight:600}
+  .proc h4{font-size:22px;font-weight:500;margin-bottom:12px;letter-spacing:-.02em}
+  .proc p{font-size:14.5px;color:var(--mute);line-height:1.6}
+  .proc .bar{margin-top:22px;height:3px;border-radius:3px;background:var(--line);overflow:hidden}
+  .proc .bar i{display:block;height:100%;background:var(--orange);border-radius:3px}
+
+  /* work cards */
+  .works{display:grid;grid-template-columns:repeat(3,1fr);gap:20px}
+  @media(max-width:900px){.works{grid-template-columns:1fr;max-width:420px;margin:0 auto}}
+  .work-card{overflow:hidden;cursor:pointer}
+  .work-card .ph{position:relative;aspect-ratio:3/4;background:#1a1a1f center/cover no-repeat;
+    display:flex;align-items:flex-start;justify-content:space-between;padding:16px}
+  .work-card .ph .tags{display:flex;gap:6px;flex-wrap:wrap}
+  .work-card .ph .tag{font-size:10.5px;letter-spacing:.04em;text-transform:uppercase;color:var(--ink);font-weight:600;
+    background:rgba(10,10,11,.55);backdrop-filter:blur(8px);border:1px solid var(--line);border-radius:100px;padding:5px 11px}
+  .work-card .ph .num{font-size:11px;color:var(--ink);font-weight:600;background:rgba(10,10,11,.55);
+    backdrop-filter:blur(8px);border:1px solid var(--line);border-radius:100px;padding:5px 10px}
+  .work-card .drop{position:absolute;left:50%;top:55%;transform:translate(-50%,-50%);font-size:10px;
+    letter-spacing:.14em;text-transform:uppercase;color:var(--faint);border:1px dashed var(--line);padding:8px 12px;border-radius:8px}
+  .work-card .meta{padding:20px 22px 22px;display:flex;align-items:flex-start;justify-content:space-between;gap:12px}
+  .work-card .meta .ttl{font-size:18px;font-weight:500;letter-spacing:-.01em;line-height:1.2}
+  .work-card .meta .styl{font-size:13px;color:var(--mute);margin-top:4px}
+  .work-card .meta .arr{flex:0 0 auto;width:34px;height:34px;border-radius:50%;border:1px solid var(--line);
+    display:grid;place-items:center;color:var(--mute);transition:transform .3s,color .3s,border-color .3s}
+  .work-card:hover .meta .arr{transform:rotate(45deg);color:var(--orange);border-color:rgba(255,90,31,.5)}
+
+  /* services / offer (numbered rows) */
+  .svc{border-top:1px solid var(--line)}
+  .svc .row{display:grid;grid-template-columns:60px 1fr auto;gap:30px;align-items:baseline;
+    padding:36px 0;border-bottom:1px solid var(--line);transition:padding-left .3s}
+  .svc .row:hover{padding-left:14px}
+  @media(max-width:720px){.svc .row{grid-template-columns:40px 1fr;gap:18px}.svc .row .cta-cell{display:none}}
+  .svc .ix{font-size:14px;color:var(--faint);font-weight:600}
+  .svc .main h4{font-size:clamp(24px,3.4vw,34px);font-weight:500;letter-spacing:-.02em;margin-bottom:10px}
+  .svc .main p{font-size:15px;color:var(--mute);max-width:560px;line-height:1.6}
+  .svc .cta-cell{font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:var(--mute);font-weight:600;white-space:nowrap}
+
+  /* faq */
+  .faq{display:grid;grid-template-columns:1fr;gap:0;border-top:1px solid var(--line)}
+  .faq .q{border-bottom:1px solid var(--line);padding:26px 0;cursor:pointer}
+  .faq .q .qt{display:flex;align-items:center;justify-content:space-between;gap:18px;font-size:18px;font-weight:500;letter-spacing:-.01em}
+  .faq .q .pm{flex:0 0 auto;width:30px;height:30px;border-radius:50%;border:1px solid var(--line);display:grid;place-items:center;color:var(--mute);transition:transform .35s,color .3s}
+  .faq .q.open .pm{transform:rotate(45deg);color:var(--orange)}
+  .faq .q .a{max-height:0;overflow:hidden;transition:max-height .4s ease,margin .4s ease;color:var(--mute);font-size:15px;line-height:1.65;max-width:680px}
+  .faq .q.open .a{margin-top:16px}
+
+  /* cta */
+  .ctaband{text-align:center;padding:clamp(110px,14vw,180px) 0}
+  .ctaband .label{margin-bottom:28px}
+  .ctaband h2{font-size:clamp(48px,9vw,116px);font-weight:500;letter-spacing:-.04em;line-height:.92;margin-bottom:40px}
+  .ctaband .actions{display:flex;gap:12px;justify-content:center;flex-wrap:wrap}
+  .ctaband .dm{margin-top:24px;font-size:14px;color:var(--mute)}
+  .ctaband .dm a{color:var(--orange-soft);border-bottom:1px solid rgba(255,90,31,.4);padding-bottom:1px}
+
+  /* footer */
+  footer{border-top:1px solid var(--line);padding:64px 0 40px}
+  .fgrid{display:grid;grid-template-columns:1.4fr 1fr 1fr 1fr;gap:30px;margin-bottom:54px}
+  @media(max-width:820px){.fgrid{grid-template-columns:1fr 1fr}}
+  @media(max-width:520px){.fgrid{grid-template-columns:1fr}}
+  footer .logo{display:inline-flex;align-items:center;gap:8px;font-weight:700;font-size:18px;letter-spacing:-.02em;margin-bottom:16px}
+  footer .logo .star{color:var(--orange);width:15px;height:15px}
+  footer .blurb{font-size:14px;color:var(--mute);max-width:260px;line-height:1.6}
+  footer .col h5{font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--faint);font-weight:600;margin-bottom:16px}
+  footer .col a,footer .col span{display:block;font-size:14px;color:var(--mute);margin-bottom:11px;transition:color .25s}
+  footer .col a:hover{color:var(--ink)}
+  footer .base{border-top:1px solid var(--line);padding-top:26px;display:flex;justify-content:space-between;flex-wrap:wrap;gap:12px;
+    font-size:12.5px;color:var(--faint)}
+
+  /* reveals */
+  .reveal{opacity:0;transform:translateY(24px);transition:opacity .8s cubic-bezier(.2,.7,.2,1),transform .8s cubic-bezier(.2,.7,.2,1)}
+  .reveal.in{opacity:1;transform:none}
+
+  @media(prefers-reduced-motion:reduce){
+    *{animation:none!important;transition-duration:.001s!important}
+    .reveal,.hero h1,.hero .eyebrow,.chip,.hero .sub,.hero .actions,.hero-logo{opacity:1;transform:none}
+  }
+  :focus-visible{outline:2px solid var(--orange);outline-offset:4px;border-radius:6px}
+</style>
+</head>
+<body>
+
+<!-- reusable star -->
+<svg width="0" height="0" style="position:absolute"><symbol id="s4" viewBox="0 0 24 24"><path fill="currentColor" d="M12 0c.9 7 4 10.1 12 12-8 1.9-11.1 5-12 12-.9-7-4-10.1-12-12C8 10.1 11.1 7 12 0Z"/></symbol></svg>
+
+<nav id="nav">
+  <div class="nleft">
+    <a href="#top" class="logo"><span class="star"><svg><use href="#s4"/></svg></span> Chrispy</a>
+  </div>
+  <div class="nright">
+    <span class="meta"><b id="clock">—</b>&nbsp;· Sydney</span>
+    <a href="#contact" class="btn btn-primary"><span class="slide"><span>Let's work</span><span>Let's work</span></span></a>
+  </div>
+</nav>
+
+<!-- HERO -->
+<header class="hero" id="top">
+  <div class="eyebrow label"><span class="star"><svg><use href="#s4"/></svg></span> Graphic Designer — Poster Swap</div>
+  <h1 class="sr-only">Chrispy.</h1>
+  <div id="chrispy3d" class="hero-logo" role="img" aria-label="Chrispy logo rendered in 3D">
+    <div class="fallback" aria-hidden="true">Chrispy<span class="o">.</span></div>
+  </div>
+
+  <div class="chip">
+    <div class="avs">
+      <i style="background-image:url('REPLACE_WITH_SWAP_THUMB_1.jpg')"></i>
+      <i style="background-image:url('REPLACE_WITH_SWAP_THUMB_2.jpg')"></i>
+      <i style="background-image:url('REPLACE_WITH_SWAP_THUMB_3.jpg')"></i>
+    </div>
+    <div class="txt"><b>15.9M</b> views in the last 30 days</div>
+  </div>
+
+  <p class="sub">I reimagine the movie posters you already know into something new — and the whole internet stops scrolling.</p>
+
+  <div class="actions">
+    <a href="#contact" class="btn btn-primary"><span class="star"><svg><use href="#s4"/></svg></span><span class="slide"><span>Let's work</span><span>Let's work</span></span></a>
+    <a href="#work" class="btn"><span class="slide"><span>See the swaps</span><span>See the swaps</span></span></a>
+  </div>
+
+  <div class="scrollcue"><span class="ln"></span>Scroll</div>
+</header>
+
+<!-- MARQUEE -->
+<div class="marquee" aria-hidden="true">
+  <div class="mtrack" id="mtrack">
+    <span class="it">1M+ likes on a single poster <span class="star"><svg><use href="#s4"/></svg></span></span>
+    <span class="it">15.9M monthly views <span class="star"><svg><use href="#s4"/></svg></span></span>
+    <span class="it">8.7M accounts reached <span class="star"><svg><use href="#s4"/></svg></span></span>
+    <span class="it">99.8% non-followers <span class="star"><svg><use href="#s4"/></svg></span></span>
+    <span class="it">1M+ likes on a single poster <span class="star"><svg><use href="#s4"/></svg></span></span>
+    <span class="it">15.9M monthly views <span class="star"><svg><use href="#s4"/></svg></span></span>
+    <span class="it">8.7M accounts reached <span class="star"><svg><use href="#s4"/></svg></span></span>
+    <span class="it">99.8% non-followers <span class="star"><svg><use href="#s4"/></svg></span></span>
+  </div>
+</div>
+
+<!-- STATS -->
+<section class="block wrap">
+  <div class="sechead reveal">
+    <div class="label"><span class="star"><svg><use href="#s4"/></svg></span> Reach, not followers</div>
+    <h2>The follower count is small. The reach is anything but.</h2>
+    <p>Almost everyone who sees a swap has never heard of me — so every post is a brand-new audience meeting your product for the first time.</p>
+  </div>
+  <div class="statrow">
+    <div class="s reveal"><div class="n">15.9<span class="u">M</span></div><div class="k">Views in the last 30 days</div></div>
+    <div class="s reveal"><div class="n">8.7<span class="u">M</span></div><div class="k">Unique accounts reached</div></div>
+    <div class="s reveal"><div class="n">99.8<span class="u">%</span></div><div class="k">Of views from non-followers — pure discovery</div></div>
+  </div>
+</section>
+
+<!-- PROCESS -->
+<section class="block wrap">
+  <div class="sechead center reveal">
+    <div class="label"><span class="star"><svg><use href="#s4"/></svg></span> The format</div>
+    <h2>How a <span class="serif o">swap</span> works.</h2>
+    <p>Familiar enough to stop the thumb, surprising enough to earn the share.</p>
+  </div>
+  <div class="proc">
+    <div class="card reveal">
+      <div class="step"><span class="ix">01</span><span class="tag">Pairing</span></div>
+      <h4>Pick the swap</h4>
+      <p>Two worlds that shouldn't meet — a film, and the visual language of a totally different one. The tension is the hook.</p>
+      <div class="bar"><i style="width:33%"></i></div>
+    </div>
+    <div class="card reveal">
+      <div class="step"><span class="ix">02</span><span class="tag">Design</span></div>
+      <h4>Rebuild it</h4>
+      <p>Recreated from scratch — type, composition, grade, grain — so it reads as a real poster from that other universe.</p>
+      <div class="bar"><i style="width:66%"></i></div>
+    </div>
+    <div class="card reveal">
+      <div class="step"><span class="ix">03</span><span class="tag">Release</span></div>
+      <h4>Post & it travels</h4>
+      <p>Dropped as a reel built to be watched and shared. The ad and the entertainment become the same object.</p>
+      <div class="bar"><i style="width:100%"></i></div>
+    </div>
+  </div>
+</section>
+
+<!-- WORK -->
+<section class="block wrap" id="work">
+  <div class="sechead reveal" style="display:flex;align-items:flex-end;justify-content:space-between;gap:20px;flex-wrap:wrap">
+    <div>
+      <div class="label"><span class="star"><svg><use href="#s4"/></svg></span> Selected work</div>
+      <h2 style="margin-top:22px">The <span class="serif o">swaps</span>.</h2>
+    </div>
+    <a href="#contact" class="btn"><span class="slide"><span>Work with me</span><span>Work with me</span></span></a>
+  </div>
+  <div class="works">
+
+    <article class="work-card card">
+      <div class="ph" style="background-image:url('REPLACE_WITH_SPIDERMAN_POSTER.jpg')">
+        <div class="tags"><span class="tag">Fan Edit</span><span class="tag">Interstellar style</span></div>
+        <span class="num">01</span>
+        <span class="drop">drop poster</span>
+      </div>
+      <div class="meta">
+        <div><div class="ttl">Spider-Man: Brand New Day</div><div class="styl">in the style of Interstellar</div></div>
+        <span class="arr">↗</span>
+      </div>
+    </article>
+
+    <article class="work-card card">
+      <div class="ph" style="background-image:url('REPLACE_WITH_ODYSSEY_POSTER.jpg')">
+        <div class="tags"><span class="tag">Fan Edit</span><span class="tag">Jaws style</span></div>
+        <span class="num">02</span>
+        <span class="drop">drop poster</span>
+      </div>
+      <div class="meta">
+        <div><div class="ttl">The Odyssey</div><div class="styl">in the style of Jaws</div></div>
+        <span class="arr">↗</span>
+      </div>
+    </article>
+
+    <article class="work-card card">
+      <div class="ph" style="background-image:url('REPLACE_WITH_TOYSTORY_POSTER.jpg')">
+        <div class="tags"><span class="tag">Fan Edit</span><span class="tag">Dark Knight style</span></div>
+        <span class="num">03</span>
+        <span class="drop">drop poster</span>
+      </div>
+      <div class="meta">
+        <div><div class="ttl">Toy Story 5</div><div class="styl">in the style of The Dark Knight</div></div>
+        <span class="arr">↗</span>
+      </div>
+    </article>
+
+  </div>
+</section>
+
+<!-- SERVICES -->
+<section class="block wrap">
+  <div class="sechead reveal">
+    <div class="label"><span class="star"><svg><use href="#s4"/></svg></span> Work with me</div>
+    <h2>Put your product in a Poster <span class="serif o">Swap</span>.</h2>
+    <p>It stops being an ad people skip and becomes something they actually want to watch.</p>
+  </div>
+  <div class="svc">
+    <div class="row reveal">
+      <span class="ix">01</span>
+      <div class="main"><h4>Sponsored Swap</h4><p>Your product, film, drop or brand turned into a custom poster reel — in the format that already pulls millions of views.</p></div>
+      <span class="cta-cell">Most popular</span>
+    </div>
+    <div class="row reveal">
+      <span class="ix">02</span>
+      <div class="main"><h4>Usage rights</h4><p>Run the piece as a paid ad or on your own channels. Licence it and put real spend behind a creative people genuinely like.</p></div>
+      <span class="cta-cell">Add-on</span>
+    </div>
+    <div class="row reveal">
+      <span class="ix">03</span>
+      <div class="main"><h4>Series partner</h4><p>Lock in a run of swaps — recurring presence in a series your audience comes back for, not a one-off they forget by Friday.</p></div>
+      <span class="cta-cell">Retainer</span>
+    </div>
+  </div>
+</section>
+
+<!-- FAQ -->
+<section class="block wrap">
+  <div class="sechead reveal">
+    <div class="label"><span class="star"><svg><use href="#s4"/></svg></span> Common questions</div>
+    <h2>Good to know.</h2>
+  </div>
+  <div class="faq reveal">
+    <div class="q"><div class="qt">What exactly is a Poster Swap?<span class="pm">+</span></div><div class="a">I take a known film and rebuild its poster in the visual style of a completely different one — same craft you'd see on an official key art, just remixed. It's posted as a short reel showing the result.</div></div>
+    <div class="q"><div class="qt">Can you feature my brand or product?<span class="pm">+</span></div><div class="a">Yes — that's the main way to work together. Your product becomes the subject of a custom swap, designed to live natively in the feed and pull the same kind of reach my fan edits do.</div></div>
+    <div class="q"><div class="qt">What's the turnaround?<span class="pm">+</span></div><div class="a">Most single swaps run a few days from brief to delivery, depending on complexity and revisions. Series and licensed work are scoped per project.</div></div>
+    <div class="q"><div class="qt">Do you sell prints of the fan edits?<span class="pm">+</span></div><div class="a">The fan swaps are tributes built around existing film IP, so they're not for sale as merch. Commissioned and fully original work is a different story — happy to talk.</div></div>
+  </div>
+</section>
+
+<!-- CTA -->
+<section class="ctaband wrap" id="contact">
+  <div class="label"><span class="star"><svg><use href="#s4"/></svg></span> Brands · Studios · Labels · Creators</div>
+  <h2>Let's make <span class="serif o">one</span>.</h2>
+  <div class="actions">
+    <a class="btn btn-primary" href="mailto:REPLACE_WITH_YOUR_EMAIL@example.com?subject=Poster%20Swap%20collab"><span class="star"><svg><use href="#s4"/></svg></span><span class="slide"><span>Let's work</span><span>Let's work</span></span></a>
+    <a class="btn" href="https://instagram.com/chrispygraphics" target="_blank" rel="noopener"><span class="slide"><span>@chrispygraphics</span><span>@chrispygraphics</span></span></a>
+  </div>
+  <p class="dm">Prefer email? <a href="mailto:REPLACE_WITH_YOUR_EMAIL@example.com">REPLACE_WITH_YOUR_EMAIL@example.com</a></p>
+</section>
+
+<footer>
+  <div class="wrap">
+    <div class="fgrid">
+      <div>
+        <div class="logo"><span class="star"><svg><use href="#s4"/></svg></span> Chrispy</div>
+        <p class="blurb">Movie posters, reimagined. A Poster Swap series by Chrispy. Based in Sydney, working worldwide.</p>
+      </div>
+      <div class="col"><h5>Pages</h5><a href="#work">Work</a><a href="#numbers">Numbers</a><a href="#contact">Contact</a></div>
+      <div class="col"><h5>Social</h5><a href="https://instagram.com/chrispygraphics" target="_blank" rel="noopener">Instagram</a><a href="#" target="_blank" rel="noopener">TikTok</a></div>
+      <div class="col"><h5>Inquiry</h5><a href="mailto:REPLACE_WITH_YOUR_EMAIL@example.com">REPLACE_WITH_YOUR_EMAIL</a><span>Sydney, AU</span></div>
+    </div>
+    <div class="base">
+      <span>© <span id="yr"></span> Chrispy · Poster Swap</span>
+      <span>Featured swaps are fan-made tributes, not official studio work.</span>
+    </div>
+  </div>
+</footer>
+
+<script>
+  document.getElementById('yr').textContent=new Date().getFullYear();
+
+  // Sydney clock
+  const clock=document.getElementById('clock');
   const tick=()=>{try{clock.textContent=new Date().toLocaleTimeString('en-AU',{hour:'2-digit',minute:'2-digit',hour12:false,timeZone:'Australia/Sydney'});}catch(e){clock.textContent='';}};
   tick();setInterval(tick,15000);
 
