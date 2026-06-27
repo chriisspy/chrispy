@@ -581,13 +581,14 @@ if (renderer) {
   }, undefined, fail);
 
   // Cursor tilt — relative to the hero box, smoothed
-  const pointer = { x:0, y:0 };
+  const pointer = { x:0, y:0, active:false };
   const TILT = 0;
   if (!reduce) {
     window.addEventListener('pointermove', (e) => {
       const r = container.getBoundingClientRect();
       pointer.x = THREE.MathUtils.clamp(((e.clientX - r.left)/r.width)*2 - 1, -1.4, 1.4);
       pointer.y = THREE.MathUtils.clamp(((e.clientY - r.top)/r.height)*2 - 1, -1.2, 1.2);
+      pointer.active = true;
     }, { passive:true });
   }
 
@@ -603,17 +604,16 @@ if (renderer) {
       const elapsed = performance.now() * 0.001 - intro.start;
       const progress = THREE.MathUtils.clamp(elapsed / intro.duration, 0, 1);
       const ease = 1 - Math.pow(1 - progress, 3);
-      const edgeSweep = ease;
-      const lift = ease;
-      const orangeSweep = Math.sin(ease * Math.PI * 2);
-      const orangeLift = Math.sin(ease * Math.PI);
+      const approach = 1 - ease;
+      const orangeSweep = ease;
+      const orangeLift = ease;
 
-      // White lights orbit the side/back hemisphere. Their Z values remain
-      // negative throughout, preventing reflections across the +Z front face.
-      key.position.set(keyHome.x - edgeSweep*3.2, keyHome.y + lift*2.4, keyHome.z - lift*2.2);
-      rim.position.set(rimHome.x + edgeSweep*3.2, rimHome.y - lift*2.0, rimHome.z - lift*1.8);
-      key.intensity = 12 + lift*8;
-      rim.intensity = 9 + lift*10;
+      // Approach the earlier, wider rear-edge positions and hold there.
+      // Z remains negative throughout, keeping reflections off the front face.
+      key.position.set(keyHome.x + approach*3.2, keyHome.y - approach*2.4, keyHome.z - approach*2.2);
+      rim.position.set(rimHome.x - approach*3.2, rimHome.y + approach*2.0, rimHome.z - approach*1.8);
+      key.intensity = 20 - approach*8;
+      rim.intensity = 19 - approach*10;
       key.lookAt(0, 0, 0);
       rim.lookAt(0, 0, 0);
 
@@ -623,15 +623,17 @@ if (renderer) {
 
       if (progress >= 1) {
         intro.active = false;
-        // White lights intentionally remain at their final rear-rim positions.
-        cursorLight.position.copy(orangeHome); cursorLight.intensity = 200;
+        // Never snap the orange light back to centre; keep its current position.
+        cursorLight.intensity = 200;
       }
     } else {
       pivot.rotation.y += (pointer.x*TILT - pivot.rotation.y)*0.06;
       pivot.rotation.x += (pointer.y*TILT - pivot.rotation.x)*0.06;
       // Orange light tracks the cursor across the surface (smoothed)
-      lightTarget.set(pointer.x*13.3, -pointer.y*7.6, 28.5);
-      cursorLight.position.lerp(lightTarget, 0.09);
+      if (pointer.active) {
+        lightTarget.set(pointer.x*13.3, -pointer.y*7.6, 28.5);
+        cursorLight.position.lerp(lightTarget, 0.09);
+      }
     }
     renderer.render(scene, camera);
   }
