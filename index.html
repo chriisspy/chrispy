@@ -532,10 +532,12 @@ if (renderer) {
   // Orange light that follows the cursor (the pointer becomes the light source)
   // A more distant, higher-output point light gives the cursor a much larger
   // pool of orange with a gentler falloff across the logo.
-  const cursorLight = new THREE.PointLight(0xff5a1f, 60, 20, 1.05);
-  cursorLight.position.set(0, 0, 9.0);
+  // Moving the source sqrt(10) times farther away makes its illuminated area
+  // roughly 10x larger; output and travel are compensated to preserve response.
+  const cursorLight = new THREE.PointLight(0xff5a1f, 200, 200, 1.05);
+  cursorLight.position.set(0, 0, 28.5);
   scene.add(cursorLight);
-  const lightTarget = new THREE.Vector3(0, 0, 9.0);
+  const lightTarget = new THREE.Vector3(0, 0, 28.5);
 
   const keyHome = key.position.clone();
   const rimHome = rim.position.clone();
@@ -601,8 +603,10 @@ if (renderer) {
       const elapsed = performance.now() * 0.001 - intro.start;
       const progress = THREE.MathUtils.clamp(elapsed / intro.duration, 0, 1);
       const ease = 1 - Math.pow(1 - progress, 3);
-      const edgeSweep = Math.sin(ease * Math.PI * 2);
-      const lift = Math.sin(ease * Math.PI);
+      const edgeSweep = ease;
+      const lift = ease;
+      const orangeSweep = Math.sin(ease * Math.PI * 2);
+      const orangeLift = Math.sin(ease * Math.PI);
 
       // White lights orbit the side/back hemisphere. Their Z values remain
       // negative throughout, preventing reflections across the +Z front face.
@@ -614,20 +618,19 @@ if (renderer) {
       rim.lookAt(0, 0, 0);
 
       // The orange source arcs beneath the logo before becoming cursor-controlled.
-      cursorLight.position.set(orangeHome.x + edgeSweep*6.0, orangeHome.y - lift*4.2, orangeHome.z - lift*3.0);
-      cursorLight.intensity = 60 + lift*30;
+      cursorLight.position.set(orangeHome.x + orangeSweep*18.9, orangeHome.y - orangeLift*13.3, orangeHome.z - orangeLift*9.5);
+      cursorLight.intensity = 200 + orangeLift*100;
 
       if (progress >= 1) {
         intro.active = false;
-        key.position.copy(keyHome); key.intensity = 12; key.lookAt(0, 0, 0);
-        rim.position.copy(rimHome); rim.intensity = 9; rim.lookAt(0, 0, 0);
-        cursorLight.position.copy(orangeHome); cursorLight.intensity = 60;
+        // White lights intentionally remain at their final rear-rim positions.
+        cursorLight.position.copy(orangeHome); cursorLight.intensity = 200;
       }
     } else {
       pivot.rotation.y += (pointer.x*TILT - pivot.rotation.y)*0.06;
       pivot.rotation.x += (pointer.y*TILT - pivot.rotation.x)*0.06;
       // Orange light tracks the cursor across the surface (smoothed)
-      lightTarget.set(pointer.x*4.2, -pointer.y*2.4, 9.0);
+      lightTarget.set(pointer.x*13.3, -pointer.y*7.6, 28.5);
       cursorLight.position.lerp(lightTarget, 0.09);
     }
     renderer.render(scene, camera);
