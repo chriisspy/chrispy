@@ -518,12 +518,14 @@ if (renderer) {
   // Cinematic studio lights: large area sources create broad, shaped reflections
   // across the glossy lettering instead of small, flat directional highlights.
   const key = new THREE.RectAreaLight(0xfff7ee, 12, 4.5, 5.5);
-  key.position.set(4.5, 3.5, 5.5);
+  // The corrected logo front faces +Z, so both white lights stay behind it
+  // on negative Z and illuminate only the bevelled outer rim.
+  key.position.set(4.8, 3.0, -3.8);
   key.lookAt(0, 0, 0);
   scene.add(key);
 
   const rim = new THREE.RectAreaLight(0xeaf2ff, 9, 2.2, 5.0);
-  rim.position.set(-4.5, 1.5, 3.0);
+  rim.position.set(-4.8, 1.0, -4.2);
   rim.lookAt(0, 0, 0);
   scene.add(rim);
 
@@ -602,9 +604,10 @@ if (renderer) {
       const edgeSweep = Math.sin(ease * Math.PI * 2);
       const lift = Math.sin(ease * Math.PI);
 
-      // White studio lights cross opposite edges, then return home.
-      key.position.set(keyHome.x - edgeSweep*5.5, keyHome.y + lift*2.0, keyHome.z - lift*2.5);
-      rim.position.set(rimHome.x + edgeSweep*5.5, rimHome.y - lift*1.5, rimHome.z + lift*2.0);
+      // White lights orbit the side/back hemisphere. Their Z values remain
+      // negative throughout, preventing reflections across the +Z front face.
+      key.position.set(keyHome.x - edgeSweep*3.2, keyHome.y + lift*2.4, keyHome.z - lift*2.2);
+      rim.position.set(rimHome.x + edgeSweep*3.2, rimHome.y - lift*2.0, rimHome.z - lift*1.8);
       key.intensity = 12 + lift*8;
       rim.intensity = 9 + lift*10;
       key.lookAt(0, 0, 0);
