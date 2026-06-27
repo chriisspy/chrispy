@@ -534,28 +534,29 @@ if (renderer) {
 
   // Cinematic studio lights: large area sources create broad, shaped reflections
   // across the glossy lettering instead of small, flat directional highlights.
-  const key = new THREE.RectAreaLight(0xfff7ee, 29, 2.4, 5.5);
-  key.position.set(5.7, 10.9, 2.9);
+  const key = new THREE.RectAreaLight(0xfff7ee, 17, 1.1, 5.5);
+  key.position.set(4.1, 8.2, -12.0);
   key.lookAt(0, 0, 0);
   scene.add(key);
 
-  const rim = new THREE.RectAreaLight(0xeaf2ff, 21, 2.2, 3.6);
-  rim.position.set(6.4, 1.0, -4.2);
+  const rim = new THREE.RectAreaLight(0xeaf2ff, 40, 1.4, 12.0);
+  rim.position.set(-7.9, 1.0, -4.2);
   rim.lookAt(0, 0, 0);
   scene.add(rim);
 
   // Orange light that follows the cursor (the pointer becomes the light source)
   // Position, output and falloff are tuned live via the optional lighting tool.
-  const cursorLight = new THREE.PointLight(0xff5a1f, 346, 218, 1.33);
-  cursorLight.position.set(-13.7, -5.6, 10.6);
+  const cursorLight = new THREE.PointLight(0xff5a1f, 459, 241, 1.25);
+  cursorLight.position.set(-32.0, -8.0, 21.6);
   scene.add(cursorLight);
   const orangeStart = cursorLight.position.clone();
-  const orangeRest = new THREE.Vector3(11.0, -5.6, 10.6);
+  const orangeRest = new THREE.Vector3(30.7, -8.0, 21.6);
   const lightTarget = orangeRest.clone();
 
   const intro = { active:false, start:0, duration:2.0 };
   const cubicBezierRamp = t => t*t*(3 - 2*t);
   const lightToolEnabled = new URLSearchParams(location.search).get('lights') === '1';
+  if (lightToolEnabled) cursorLight.position.copy(orangeRest);
 
   const pivot = new THREE.Group();
   scene.add(pivot);
