@@ -535,6 +535,11 @@ if (renderer) {
   scene.add(cursorLight);
   const lightTarget = new THREE.Vector3(0, 0, 9.0);
 
+  const keyHome = key.position.clone();
+  const rimHome = rim.position.clone();
+  const orangeHome = cursorLight.position.clone();
+  const intro = { active:false, start:0, duration:3.2 };
+
   const pivot = new THREE.Group();
   scene.add(pivot);
 
@@ -565,6 +570,13 @@ if (renderer) {
     });});
     frame(model);
     pivot.add(model);
+    if (!reduce) {
+      pivot.scale.setScalar(0.72);
+      pivot.rotation.set(0.08, 0.18, -0.035);
+      pivot.position.z = -0.18;
+      intro.active = true;
+      intro.start = performance.now() * 0.001;
+    }
   }, undefined, fail);
 
   // Cursor tilt — relative to the hero box, smoothed
@@ -585,11 +597,47 @@ if (renderer) {
   function animate(){
     requestAnimationFrame(animate);
     if (!visible) return;
-    pivot.rotation.y += (pointer.x*TILT - pivot.rotation.y)*0.06;
-    pivot.rotation.x += (pointer.y*TILT - pivot.rotation.x)*0.06;
-    // Orange light tracks the cursor across the surface (smoothed)
-    lightTarget.set(pointer.x*4.2, -pointer.y*2.4, 9.0);
-    cursorLight.position.lerp(lightTarget, 0.09);
+
+    if (intro.active) {
+      const elapsed = performance.now() * 0.001 - intro.start;
+      const progress = THREE.MathUtils.clamp(elapsed / intro.duration, 0, 1);
+      const ease = 1 - Math.pow(1 - progress, 3);
+      const edgeSweep = Math.sin(ease * Math.PI * 2);
+      const lift = Math.sin(ease * Math.PI);
+
+      // Logo settles forward into its final, static pose.
+      pivot.scale.setScalar(0.72 + 0.28 * ease);
+      pivot.rotation.set(0.08 * (1-ease), 0.18 * (1-ease), -0.035 * (1-ease));
+      pivot.position.z = -0.18 * (1-ease);
+
+      // White studio lights cross opposite edges, then return home.
+      key.position.set(keyHome.x - edgeSweep*5.5, keyHome.y + lift*2.0, keyHome.z - lift*2.5);
+      rim.position.set(rimHome.x + edgeSweep*5.5, rimHome.y - lift*1.5, rimHome.z + lift*2.0);
+      key.intensity = 12 + lift*8;
+      rim.intensity = 9 + lift*10;
+      key.lookAt(0, 0, 0);
+      rim.lookAt(0, 0, 0);
+
+      // The orange source arcs beneath the logo before becoming cursor-controlled.
+      cursorLight.position.set(orangeHome.x + edgeSweep*6.0, orangeHome.y - lift*4.2, orangeHome.z - lift*3.0);
+      cursorLight.intensity = 60 + lift*30;
+
+      if (progress >= 1) {
+        intro.active = false;
+        pivot.scale.setScalar(1);
+        pivot.rotation.set(0, 0, 0);
+        pivot.position.z = 0;
+        key.position.copy(keyHome); key.intensity = 12; key.lookAt(0, 0, 0);
+        rim.position.copy(rimHome); rim.intensity = 9; rim.lookAt(0, 0, 0);
+        cursorLight.position.copy(orangeHome); cursorLight.intensity = 60;
+      }
+    } else {
+      pivot.rotation.y += (pointer.x*TILT - pivot.rotation.y)*0.06;
+      pivot.rotation.x += (pointer.y*TILT - pivot.rotation.x)*0.06;
+      // Orange light tracks the cursor across the surface (smoothed)
+      lightTarget.set(pointer.x*4.2, -pointer.y*2.4, 9.0);
+      cursorLight.position.lerp(lightTarget, 0.09);
+    }
     renderer.render(scene, camera);
   }
   animate();
