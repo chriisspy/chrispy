@@ -556,7 +556,7 @@ if (renderer) {
     const model = gltf.scene;
     // Force the liquid black-glass look instead of the baked texture
     model.traverse(o => { if (o.isMesh) o.material = new THREE.MeshPhysicalMaterial({
-      color:0x09090a, metalness:0.0, roughness:0.05,
+      color:0x060606, metalness:0.0, roughness:0.05,
       clearcoat:1.0, clearcoatRoughness:0.03, reflectivity:1.0, envMapIntensity:1.5
     });});
     frame(model);
