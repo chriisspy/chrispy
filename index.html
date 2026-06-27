@@ -504,6 +504,10 @@ import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
 import { RectAreaLightUniformsLib } from 'three/addons/lights/RectAreaLightUniformsLib.js';
+import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
+import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
+import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
+import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 
 // Versioned filename deliberately bypasses browser and CDN caches after model updates.
 const MODEL_URL = 'chrispy-v3-20260627.glb?v=3';
@@ -533,6 +537,20 @@ if (renderer) {
   scene.environment = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
 
   const camera = new THREE.PerspectiveCamera(35, container.clientWidth/container.clientHeight, 0.1, 100);
+
+  // High-threshold, low-strength bloom adds a restrained glow only to the
+  // brightest rim highlights while preserving the deep black glass surface.
+  const composer = new EffectComposer(renderer);
+  composer.setPixelRatio(Math.min(devicePixelRatio, 2));
+  composer.addPass(new RenderPass(scene, camera));
+  const bloom = new UnrealBloomPass(
+    new THREE.Vector2(container.clientWidth, container.clientHeight),
+    0.22, // strength
+    0.45, // radius
+    0.90  // luminance threshold
+  );
+  composer.addPass(bloom);
+  composer.addPass(new OutputPass());
 
   // Cinematic studio lights: large area sources create broad, shaped reflections
   // across the glossy lettering instead of small, flat directional highlights.
@@ -711,7 +729,7 @@ if (renderer) {
         cursorLight.position.copy(lightTarget);
       }
     }
-    renderer.render(scene, camera);
+    composer.render();
   }
   animate();
 
@@ -720,6 +738,7 @@ if (renderer) {
     const w = container.clientWidth, h = container.clientHeight;
     if (!w || !h) return;
     renderer.setSize(w, h, false);
+    composer.setSize(w, h);
     camera.aspect = w/h; camera.updateProjectionMatrix();
   });
   ro.observe(container);
