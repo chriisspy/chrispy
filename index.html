@@ -545,9 +545,9 @@ if (renderer) {
   composer.addPass(new RenderPass(scene, camera));
   const bloom = new UnrealBloomPass(
     new THREE.Vector2(container.clientWidth, container.clientHeight),
-    0.22, // strength
-    0.45, // radius
-    0.90  // luminance threshold
+    0.05, // strength
+    0.20, // radius
+    0.97  // luminance threshold
   );
   composer.addPass(bloom);
   composer.addPass(new OutputPass());
@@ -644,6 +644,9 @@ if (renderer) {
       ]},
       { id:'orange', title:'Orange cursor light', light:cursorLight, props:[
         ['x',-40,40,.1],['y',-40,40,.1],['z',-10,60,.1],['intensity',0,500,1],['distance',0,300,1],['decay',0,2,.01]
+      ]},
+      { id:'bloom', title:'Bloom / rim glow', light:bloom, props:[
+        ['strength',0,.4,.01],['radius',0,1,.01],['threshold',.7,1,.01]
       ]}
     ];
 
@@ -655,14 +658,15 @@ if (renderer) {
     const writeValue = (spec, prop, value) => {
       if (positionProps.has(prop)) spec.light.position[prop] = value;
       else spec.light[prop] = value;
-      if (spec.id !== 'orange') spec.light.lookAt(0,0,0);
+      if (spec.id === 'key' || spec.id === 'rim') spec.light.lookAt(0,0,0);
     };
     const rounded = n => Number(n.toFixed(3));
     const updateOutput = () => {
       output.value = JSON.stringify({
         key:{position:key.position.toArray().map(rounded),intensity:rounded(key.intensity),width:rounded(key.width),height:rounded(key.height)},
         rim:{position:rim.position.toArray().map(rounded),intensity:rounded(rim.intensity),width:rounded(rim.width),height:rounded(rim.height)},
-        orange:{position:cursorLight.position.toArray().map(rounded),intensity:rounded(cursorLight.intensity),distance:rounded(cursorLight.distance),decay:rounded(cursorLight.decay)}
+        orange:{position:cursorLight.position.toArray().map(rounded),intensity:rounded(cursorLight.intensity),distance:rounded(cursorLight.distance),decay:rounded(cursorLight.decay)},
+        bloom:{strength:rounded(bloom.strength),radius:rounded(bloom.radius),threshold:rounded(bloom.threshold)}
       }, null, 2);
     };
 
